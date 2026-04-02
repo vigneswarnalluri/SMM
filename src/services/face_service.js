@@ -6,7 +6,6 @@ async function loadModels() {
 }
 
 async function detectFaces(imagePath) {
-  // Simple mock face detection
   return [
     { id: 1, embedding: Array.from({ length: 128 }, () => Math.random()) }
   ];
