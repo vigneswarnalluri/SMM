@@ -1,8 +1,13 @@
 const express = require('express');
 const cors = require('cors');
+const fs = require('fs-extra');
 const { db, initializeDb } = require('./db/db_connection');
 const { upload, generateThumbnail } = require('./services/image_service');
 const { detectFaces, computeSimilarity } = require('./services/face_service');
+
+// Ensure required directories exist
+fs.ensureDirSync('uploads');
+fs.ensureDirSync('thumbnails');
 
 const app = express();
 app.use(cors());
