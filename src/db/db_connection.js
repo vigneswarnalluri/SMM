@@ -27,7 +27,7 @@ async function initializeDb() {
   
   console.log('Connecting to Supabase...');
   try {
-    const hasMedia = await db.schema.hasTable('media').timeout(10000);
+    const hasMedia = await db.schema.hasTable('media');
     console.log('Connection successful!');
     
     if (!hasMedia) {
