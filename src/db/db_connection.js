@@ -5,20 +5,30 @@ const db = knex({
   client: 'pg',
   connection: process.env.DATABASE_URL ? {
     connectionString: process.env.DATABASE_URL,
-    ssl: {
-      rejectUnauthorized: false
-    }
-  } : {
-    // Fallback for local development if DATABASE_URL is not set
-    host: '127.0.0.1',
-    user: 'your_user',
-    password: 'your_password',
-    database: 'your_db'
-  },
+    ssl: { rejectUnauthorized: false }
+  } : null,
+  pool: {
+    min: 2,
+    max: 10,
+    createTimeoutMillis: 30000,
+    acquireTimeoutMillis: 30000,
+    idleTimeoutMillis: 30000,
+    reapIntervalMillis: 1000,
+    createRetryIntervalMillis: 100,
+    propagateCreateError: false
+  }
 });
 
 async function initializeDb() {
-  const hasMedia = await db.schema.hasTable('media');
+  if (!process.env.DATABASE_URL) {
+    console.log('No DATABASE_URL found. Skipping DB init.');
+    return;
+  }
+  
+  console.log('Connecting to Supabase...');
+  try {
+    const hasMedia = await db.schema.hasTable('media').timeout(10000);
+    console.log('Connection successful!');
   if (!hasMedia) {
     await db.schema.createTable('media', (table) => {
       table.increments('id');
