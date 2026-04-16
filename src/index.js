@@ -15,28 +15,58 @@ app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 
 app.post('/api/media/upload', upload.single('image'), async (req, res) => {
-  const filePath = req.file.path;
-  const [id] = await db('media').insert({ file_path: filePath, status: 'uploaded' });
-  
-  res.json({ id, filePath });
-  
-  const thumbPath = `thumbnails/thumb-${req.file.filename}`;
-  const success = await generateThumbnail(filePath, thumbPath);
-  if (success) {
-    await db('media').where({ id }).update({ thumbnail_path: thumbPath, status: 'processed' });
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No image file provided' });
+    }
+    const filePath = req.file.path;
+    console.log('Registering upload in DB:', filePath);
+    
+    const [id] = await db('media').insert({ 
+      file_path: filePath, 
+      status: 'uploaded' 
+    }).returning('id');
+    
+    console.log('Upload registered with ID:', id);
+    res.json({ id, filePath });
+    
+    // Process thumbnail in background
+    const thumbPath = `thumbnails/thumb-${req.file.filename}`;
+    generateThumbnail(filePath, thumbPath).then(async (success) => {
+      if (success) {
+        await db('media').where({ id }).update({ thumbnail_path: thumbPath, status: 'processed' });
+      }
+    }).catch(err => console.error('Thumbnail error:', err));
+    
+  } catch (err) {
+    console.error('Upload error details:', err);
+    res.status(500).json({ error: err.message });
   }
 });
 
 app.post('/api/media/detect-faces', async (req, res) => {
-  const { mediaId } = req.body;
-  const media = await db('media').where({ id: mediaId }).first();
-  const faces = await detectFaces(media.file_path);
-  
-  for (const f of faces) {
-    await db('faces').insert({ media_id: mediaId, embedding: JSON.stringify(f.embedding) });
+  try {
+    const { mediaId } = req.body;
+    console.log('Detecting faces for mediaId:', mediaId);
+    
+    const media = await db('media').where({ id: mediaId }).first();
+    if (!media) return res.status(404).json({ error: 'Media not found' });
+
+    const faces = await detectFaces(media.file_path);
+    console.log(`Detected ${faces.length} faces`);
+    
+    for (const f of faces) {
+      await db('faces').insert({ 
+        media_id: mediaId, 
+        embedding: JSON.stringify(f.embedding) 
+      });
+    }
+    
+    res.json({ message: 'Faces detected', faces });
+  } catch (err) {
+    console.error('Detection error details:', err);
+    res.status(500).json({ error: err.message });
   }
-  
-  res.json({ message: 'Faces detected', faces });
 });
 
 app.get('/api/faces/similar', async (req, res) => {
