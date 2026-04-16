@@ -29,24 +29,29 @@ async function initializeDb() {
   try {
     const hasMedia = await db.schema.hasTable('media').timeout(10000);
     console.log('Connection successful!');
-  if (!hasMedia) {
-    await db.schema.createTable('media', (table) => {
-      table.increments('id');
-      table.text('file_path');
-      table.text('thumbnail_path');
-      table.text('status');
-      table.timestamp('created_at').defaultTo(db.fn.now());
-    });
-  }
+    
+    if (!hasMedia) {
+      await db.schema.createTable('media', (table) => {
+        table.increments('id');
+        table.text('file_path');
+        table.text('thumbnail_path');
+        table.text('status');
+        table.timestamp('created_at').defaultTo(db.fn.now());
+      });
+    }
 
-  const hasFaces = await db.schema.hasTable('faces');
-  if (!hasFaces) {
-    await db.schema.createTable('faces', (table) => {
-      table.increments('id');
-      table.integer('media_id');
-      table.text('embedding');
-      table.timestamp('created_at').defaultTo(db.fn.now());
-    });
+    const hasFaces = await db.schema.hasTable('faces');
+    if (!hasFaces) {
+      await db.schema.createTable('faces', (table) => {
+        table.increments('id');
+        table.integer('media_id');
+        table.text('embedding');
+        table.timestamp('created_at').defaultTo(db.fn.now());
+      });
+    }
+  } catch (error) {
+    console.error('Database initialization failed:', error.message);
+    throw error;
   }
 }
 
