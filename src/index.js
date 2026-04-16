@@ -22,11 +22,12 @@ app.post('/api/media/upload', upload.single('image'), async (req, res) => {
     const filePath = req.file.path;
     console.log('Registering upload in DB:', filePath);
     
-    const [id] = await db('media').insert({ 
+    const [row] = await db('media').insert({ 
       file_path: filePath, 
       status: 'uploaded' 
     }).returning('id');
     
+    const id = row.id;
     console.log('Upload registered with ID:', id);
     res.json({ id, filePath });
     
