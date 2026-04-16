@@ -1,12 +1,12 @@
 const knex = require('knex');
-const path = require('path');
+require('dotenv').config();
 
 const db = knex({
-  client: 'better-sqlite3',
+  client: 'pg',
   connection: {
-    filename: path.join(__dirname, '../../database.sqlite'),
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
   },
-  useNullAsDefault: true,
 });
 
 async function initializeDb() {
